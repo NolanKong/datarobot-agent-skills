@@ -201,7 +201,7 @@ task infra:encrypt-secrets
 # 2. Push GitHub secrets
 task infra:setup-github-secrets
 
-# 3. Initialise Pulumi (sets backend + creates dev stack)
+# 3. Initialize Pulumi (sets backend + creates dev stack)
 task infra:pulumi-login-azure
 ```
 
