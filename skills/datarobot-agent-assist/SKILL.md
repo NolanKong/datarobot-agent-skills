@@ -5,7 +5,7 @@ description: >-
   via built-in rehearsal engine, template-based coding, and deployment. Combines agent design guidance
   with interactive pre-code simulation (DataRobot LLM Gateway, feedback report). Use when the user
   wants to design, build, code, or deploy an AI agent for DataRobot, run a spec simulation before
-  coding, mentions "agent spec", "datarobot-agent-assist", "dr-assist", "dress rehearsal", or creating agents on DataRobot's
+  coding, mentions "agent spec", "datarobot-agent-assist", "dr-assist", "dress rehearsal", or is creating agents on DataRobot's
   platform.
 ---
 
@@ -15,7 +15,7 @@ This skill merges **agent design, coding, and deployment** with **interactive dr
 
 Assistance falls into three categories:
 
-1. **Designing an AI agent** → Clarify requirements, build `agent_spec.md`, optionally simulate before code
+1. **Designing an AI agent** → Clarify requirements, build `agent_spec.md`, optionally simulate the agent before coding
 2. **Coding an AI agent** → Adapt the DataRobot agent application template to the spec
 3. **Deploying an AI agent** → Follow `AGENTS.md` deployment instructions
 
@@ -36,7 +36,7 @@ What would you like to do?
   3. Deploy an AI agent     → Deploy an implemented agent to DataRobot
 ```
 
-After the user selects an option, and before proceeding, make sure the DataRobot CLI minimum v0.2.64 or higher is installed and authenticated (see **DataRobot CLI Setup** section at the bottom).
+After the user selects an option, and before proceeding, make sure the DataRobot CLI minimum v0.2.66 or higher is installed and authenticated (see **DataRobot CLI Setup** section at the bottom).
 - If the CLI is not set up, ALWAYS RUN shell command to install it before proceeding.
 - ALWAYS RUN the shell command to upgrade CLI before proceeding.
 - If the CLI is not authenticated, ALWAYS RUN shell command to authenticate before proceeding.
@@ -178,7 +178,7 @@ Then offer to implement any changes to `agent_spec.md`.
 
 ## 2. Coding an AI Agent
 
-**On Windows: coding is not supported here. Tell the user to use another IDE (Claude Code, Cursor, VS Code, etc.).**
+**On Windows: coding is not supported. STOP and do NOT proceed with the next steps!**
 
 ### Pre-coding Checklist
 
@@ -264,6 +264,8 @@ Then offer to implement any changes to `agent_spec.md`.
 ---
 
 ## Helper Scripts
+
+The following are the examples of helper scripts used in the skill. They are located in the `scripts` directory and are designed to assist with various tasks.
 
 ### list_llm_models.py
 
@@ -356,7 +358,7 @@ frontend:
 
 When tools require external service auth, note that credentials must be configured as **runtime parameters** in the infrastructure code (see `AGENTS.md` for the pattern).
 
-See [references/agent-spec-examples.md](references/agent-spec-examples.md) for complete worked examples.
+See [references/agent-spec-examples.md](references/agent-spec-examples.md) for complete working examples.
 
 ---
 
@@ -415,7 +417,7 @@ Check if the CLI is installed:
 dr --version
 ```
 
-Expected output: `DataRobot CLI version: v0.2.64` (or similar)
+Expected output: `DataRobot CLI version: v0.2.66` (or similar)
 
 ### Install DataRobot CLI
 
