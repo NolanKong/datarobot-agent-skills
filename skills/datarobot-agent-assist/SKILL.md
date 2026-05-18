@@ -36,10 +36,19 @@ What would you like to do?
   3. Deploy an AI agent     → Deploy an implemented agent to DataRobot
 ```
 
-After the user selects an option, and before proceeding, make sure the DataRobot CLI minimum v0.2.66 or higher is installed and authenticated (see **DataRobot CLI Setup** section at the bottom).
-- If the CLI is not set up, ALWAYS RUN shell command to install it before proceeding.
-- ALWAYS RUN the shell command to upgrade CLI before proceeding.
-- If the CLI is not authenticated, ALWAYS RUN shell command to authenticate before proceeding.
+After the user selects an option, and before proceeding, run through the **[Pre-requisite Check](#pre-requisite-check)** section below.
+
+---
+
+## Pre-requisite Check
+
+Run in order before proceeding:
+
+1. **Git** — run `git --version`. If missing, tell the user to install from https://git-scm.com and stop.
+2. **DataRobot CLI** — follow **DataRobot CLI Setup** at the bottom:
+   - If missing, **ALWAYS RUN** the install command before proceeding
+   - **ALWAYS RUN** the upgrade command before proceeding
+   - If not authenticated, **ALWAYS RUN** the auth command before proceeding
 
 ---
 
