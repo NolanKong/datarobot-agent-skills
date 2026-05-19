@@ -1,6 +1,6 @@
 # DataRobot Agent Skills Library
 
-This file provides instructions for OpenAI Codex to use DataRobot skills. Codex will automatically load these instructions when working with DataRobot-related tasks.
+This file provides instructions for an agent to use DataRobot skills. An agent will automatically load these instructions when working with DataRobot-related tasks.
 
 ## Should I Add a Skill Here?
 
