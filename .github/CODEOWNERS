@@ -1,2 +1,13 @@
 # Find the appropriate team in https://github.com/orgs/datarobot-oss/teams and grant it write permissions to the repository
-* @datarobot/agentic-assistant
+
+# Default owner for repo scaffolding, CI, docs, and anything outside skills/
+* @datarobot-oss/datarobot-agent-skills
+
+# All skills default to core-modeling (overrides the wildcard above for skills/)
+/skills/ @datarobot/core-modeling
+
+# App framework skills are owned by the Applications team
+/skills/datarobot-app-framework-*/ @datarobot/applications
+
+# External agent monitoring is owned by vitali93
+/skills/datarobot-external-agent-monitoring/ @vitali93
