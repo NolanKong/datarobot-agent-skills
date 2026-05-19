@@ -44,8 +44,18 @@ tasks:
     cmds:
       - uv run --group dev mypy {{.DIR}}
 
+  license:check:
+    desc: Check copyright headers on all code files
+    cmds:
+      - license-eye header check
+
+  license:fix:
+    desc: Add missing copyright headers to code files
+    cmds:
+      - license-eye header fix
+
   lint:
-    desc: Run all linting checks (validate skills + ruff + mypy + shellcheck + yamlfmt)
+    desc: Run all linting checks (validate skills + ruff + mypy + shellcheck + yamlfmt + license)
     deps:
       - test:integration
       - ruff:check
@@ -53,6 +63,7 @@ tasks:
       - mypy
       - shellcheck
       - yamlfmt:check
+      - license:check
 
   format:
     desc: Format all Python scripts and YAML files
@@ -71,6 +82,6 @@ tasks:
       - SKILLS_E2E_FORCE_ALL=1 uv run --group e2e pytest tests/e2e/ -v --tb=short
 
   default:
-    desc: Run validation and linting
+    desc: List all available tasks
     cmds:
-      - task: lint
+      - task --list

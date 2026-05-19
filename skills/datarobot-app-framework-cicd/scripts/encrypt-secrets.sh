@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 DataRobot, Inc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 # GPG encryption script for .env files
 # Used for GitHub Actions secrets management
 # See: https://docs.github.com/en/actions/security-for-github-actions/using-encrypted-secrets

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 DataRobot, Inc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Upload a dataset file to DataRobot.
 

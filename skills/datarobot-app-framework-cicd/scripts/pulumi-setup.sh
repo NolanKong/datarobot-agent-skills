@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 DataRobot, Inc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 # Pulumi setup script for DataRobot Application Templates
 # This script helps initialize Pulumi with different backend options
 

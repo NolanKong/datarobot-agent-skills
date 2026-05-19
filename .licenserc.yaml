@@ -1,0 +1,17 @@
+---
+header:
+  license:
+    content: |
+      Copyright (c) 2026 DataRobot, Inc. All rights reserved.
+      SPDX-License-Identifier: Apache-2.0
+    pattern: |
+      Copyright \(c\) \d{4} DataRobot, Inc\. All rights reserved\.
+      SPDX-License-Identifier: Apache-2\.0
+  paths:
+    - "**/*.py"
+    - "**/*.sh"
+  paths-ignore:
+    - ".git/**"
+    - "**/CODEOWNERS"
+    - "uv.lock"
+  comment: on-failure

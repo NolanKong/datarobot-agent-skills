@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 DataRobot, Inc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 # Add variables to GitLab project using GitLab CLI
 # Requires: glab CLI (https://gitlab.com/gitlab-org/cli)
 

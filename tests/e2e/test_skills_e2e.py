@@ -1,3 +1,6 @@
+# Copyright (c) 2026 DataRobot, Inc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 """End-to-end quality tests for DataRobot agent skills.
 
 Each SKILL.md is evaluated by an LLM judge that checks whether an agent

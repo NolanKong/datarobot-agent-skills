@@ -1,0 +1,30 @@
+---
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: arduino/setup-task@v2
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+      - name: Install claude CLI
+        run: npm install -g @anthropic-ai/claude-code
+      - uses: actions/setup-go@v6
+      - name: Install go tools
+        run: |
+          go install github.com/google/yamlfmt/cmd/yamlfmt@latest
+          go install github.com/apache/skywalking-eyes/cmd/license-eye@latest
+      - name: Install integration dependencies
+        run: uv sync --group integration
+      - name: Run lint
+        run: task lint

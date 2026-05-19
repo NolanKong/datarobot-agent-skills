@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 DataRobot, Inc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 """Setup and initialize a DataRobot agent application template.
 
 This script performs initial setup for a DataRobot agent application template by:
