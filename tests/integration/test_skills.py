@@ -6,7 +6,6 @@ Validate DataRobot skill folders:
 """
 
 import warnings
-import warnings
 from pathlib import Path
 
 import frontmatter
@@ -20,7 +19,7 @@ SKILLS_DIR = REPO_ROOT / "skills"
 # However, the estimate_tokens() estimator from datarobot_genai runs approximately 1.33x
 # high relative to actual model token counts. The thresholds below are scaled to compensate
 # so that skills genuinely within budget don't produce false positives.
-TOKEN_WARN_THRESHOLD = 3300   # ~2500 real tokens
+TOKEN_WARN_THRESHOLD = 3300  # ~2500 real tokens
 TOKEN_ERROR_THRESHOLD = 6700  # ~5000 real tokens
 
 
