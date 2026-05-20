@@ -53,6 +53,11 @@
       "name": "datarobot-agent-assist",
       "description": "Build AI agents and deploy them to DataRobot. Supports building LangGraph, CrewAI, LlamaIndex, NAT and Base agents. Created agents can be bundled with MCP server, backend APIs & React frontend",
       "path": "skills/datarobot-agent-assist/SKILL.md"
+    },
+    {
+      "name": "datarobot-setup",
+      "description": "Sets up DataRobot for local development including Python SDK, dr-cli, Agent Assist, and all required dependencies",
+      "path": "skills/datarobot-setup/SKILL.md"
     }
   ]
 }

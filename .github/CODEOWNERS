@@ -5,6 +5,7 @@
 
 # Agent assist is owned by agentic-assistant
 /skills/datarobot-agent-assist/ @datarobot/agentic-assistant
+/skills/datarobot-setup/ @datarobot/agentic-assistant
 
 # Skills owned by core-modeling
 /skills/datarobot-data-preparation/ @datarobot/core-modeling
