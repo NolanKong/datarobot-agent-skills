@@ -23,9 +23,11 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-REPO_URL = "https://github.com/datarobot-community/datarobot-agent-application.git"
-BRANCH: str | None = None
-TAG: str | None = "11.9.2"
+REPO_URL = "https://github.com/datarobot/recipe-datarobot-agent-application.git"
+# BRANCH: str | None = None
+# TAG: str | None = "11.9.2"
+BRANCH: str | None = "main"
+TAG: str | None = None
 
 
 def cleanup_git_dir(target_dir: Path) -> None:
