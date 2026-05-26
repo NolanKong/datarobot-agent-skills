@@ -1,6 +1,6 @@
 ---
 name: datarobot-predictions
-description: Tools and guidance for making predictions with DataRobot models, including real-time predictions, batch scoring, and prediction dataset generation. Use when making predictions, running batch scoring, or generating prediction datasets.
+description: Tools and guidance for making predictions with DataRobot deployments, including real-time predictions, batch scoring, prediction dataset generation, and prediction explanations (SHAP/XEMP). Use when making predictions, running batch scoring, generating prediction datasets, or explaining individual predictions from a deployment.
 ---
 
 # DataRobot Predictions Skill
@@ -17,15 +17,23 @@ This skill provides comprehensive guidance for working with DataRobot prediction
 
 **Example**: "Generate a prediction dataset template for deployment abc123 with 10 rows"
 
+**To also explain predictions**: pass `--max-explanations N` to `make_prediction.py` (or the
+`max_explanations=N` kwarg in code). See [Prediction Explanations](#prediction-explanations) below.
+
 ## When to use this skill
 
 Use this skill when you need to:
 - Make predictions from deployed DataRobot models
+- Explain individual predictions from a deployment (SHAP or XEMP, per-row)
 - Generate prediction dataset templates
 - Validate prediction data before scoring
 - Understand deployment feature requirements
 - Perform batch predictions on large datasets
 - Get sample training data to understand expected formats
+
+> For post-hoc explanations against a **training project / leaderboard model** (not a deployment),
+> use the `datarobot-model-explainability` skill instead. This skill covers deployment-time
+> explanations returned alongside scoring.
 
 ## Key capabilities
 
@@ -119,6 +127,80 @@ Use these DataRobot SDK methods to work with predictions:
 
 See the [Common Patterns](#common-patterns) section below for complete examples.
 
+## Prediction Explanations
+
+Deployments can return per-row explanations (top feature contributions) alongside predictions.
+Two algorithms are available depending on how the deployment was configured:
+
+- **SHAP** (`shap`): SHapley Additive exPlanations. Available on tree-based models when SHAP was
+  enabled at deployment time. Returns signed contributions in the model's score space.
+- **XEMP** (`xemp`): DataRobot's eXplainable AI for the eXact Model Prediction. Default when SHAP
+  is not enabled. Returns top-N strongest features with a qualitative strength (`+++`, `--`, etc.).
+
+If you omit `explanation_algorithm`, the deployment's default is used.
+
+### How to request explanations
+
+Pass `max_explanations=N` (and any optional filters) when calling `datarobot_predict.deployment.predict`:
+
+```python
+import datarobot as dr
+import pandas as pd
+from datarobot_predict.deployment import predict as dr_predict
+
+dr.Client(token=..., endpoint=...)
+deployment = dr.Deployment.get("abc123")
+
+result = dr_predict(
+    deployment=deployment,
+    data_frame=pd.DataFrame([{"feature1": 10, "feature2": 20}]),
+    max_explanations=3,                  # top 3 contributors per row
+    explanation_algorithm="shap",        # or "xemp"; omit for deployment default
+    # threshold_high=0.8,                # optional: only explain rows scoring > 0.8
+    # threshold_low=0.2,                 # optional: only explain rows scoring < 0.2
+    # passthrough_columns="all",         # optional: echo input columns through to output
+)
+print(result.dataframe.to_dict(orient="records"))
+```
+
+The result DataFrame includes columns like `EXPLANATION_1_FEATURE_NAME`,
+`EXPLANATION_1_ACTUAL_VALUE`, `EXPLANATION_1_STRENGTH`, `EXPLANATION_1_QUALITATIVE_STRENGTH` for
+each of the top-N contributors.
+
+### Parameter reference
+
+| Parameter | Purpose |
+|-----------|---------|
+| `max_explanations` | Top-N contributors per row. `0` (default) disables explanations. |
+| `max_ngram_explanations` | Text models only: cap text-segment explanations per row. |
+| `threshold_high` | Only explain rows with prediction probability **above** this (0–1). |
+| `threshold_low` | Only explain rows with prediction probability **below** this (0–1). |
+| `explanation_algorithm` | `"shap"` or `"xemp"`; omit to use deployment default. |
+| `passthrough_columns` | `"all"` or set of input column names to echo through to output. |
+
+### CLI shortcut
+
+```bash
+python scripts/make_prediction.py abc123 '{"feature1": 10, "feature2": 20}' \
+    --max-explanations 3 --explanation-algorithm shap
+```
+
+### When to use which threshold
+
+- `threshold_high` is useful when only positive (high-risk / fraud / churn-likely) predictions need
+  explaining — saves compute on a large batch.
+- `threshold_low` is the mirror image for low-probability rows.
+- Setting both restricts explanations to rows outside the `[low, high]` band.
+
+### Common errors
+
+- **"Prediction explanations not enabled"**: the deployment was created without explanations support.
+  Re-deploy the model with explanations enabled, or use a deployment that has them.
+- **`max_explanations` ignored / no explanation columns in output**: confirm you're calling
+  `datarobot_predict.deployment.predict(...)` and that the deployment has explanations enabled.
+  The `deployment.predict_batch()` convenience wrapper on the SDK is intended for plain scoring;
+  use `datarobot_predict.deployment.predict` when you need explanation kwargs.
+
 ## Helper Scripts
 
 This skill includes executable helper scripts that Claude can run directly:
@@ -141,6 +223,10 @@ python scripts/validate_prediction_data.py abc123 prediction_data.csv
 
 # Make prediction
 python scripts/make_prediction.py abc123 '{"feature1": 10, "feature2": 20}'
+
+# Make prediction with top-3 SHAP explanations
+python scripts/make_prediction.py abc123 '{"feature1": 10, "feature2": 20}' \
+    --max-explanations 3 --explanation-algorithm shap
 ```
 
 Claude can run these scripts directly or use them as reference when writing code.
@@ -155,37 +241,35 @@ Claude can run these scripts directly or use them as reference when writing code
 
 ## Common patterns
 
-### Pattern 1: Get deployment features and make single prediction
+### Pattern 1: Get deployment features and make single prediction (optionally with explanations)
 ```python
 import datarobot as dr
 import os
 import pandas as pd
+from datarobot_predict.deployment import predict as dr_predict
 
 # Initialize client
-client = dr.Client(
+dr.Client(
     token=os.getenv("DATAROBOT_API_TOKEN"),
-    endpoint=os.getenv("DATAROBOT_ENDPOINT")
+    endpoint=os.getenv("DATAROBOT_ENDPOINT"),
 )
 
-# Get deployment (and optionally model metadata)
 deployment = dr.Deployment.get("abc123")
-model = dr.Model.get(deployment.model['id'])
 
-# Get feature information
-features = model.get_features()
-feature_importance = model.get_feature_impact()
-
-# Create prediction data
 prediction_data = {
     "feature1": value1,
     "feature2": value2,
     # ... all required features (excluding target)
 }
 
-# Make prediction (single-row batch prediction)
-df = pd.DataFrame([prediction_data])
-predictions_df = deployment.predict_batch(df)
-print(predictions_df)
+# Score one row. Add max_explanations=N to get top-N explanations per row.
+result = dr_predict(
+    deployment=deployment,
+    data_frame=pd.DataFrame([prediction_data]),
+    max_explanations=3,                # optional; 0/omit to disable explanations
+    explanation_algorithm="shap",      # optional; omit to use deployment default
+)
+print(result.dataframe.to_dict(orient="records"))
 ```
 
 ### Pattern 2: Generate template and batch predictions
