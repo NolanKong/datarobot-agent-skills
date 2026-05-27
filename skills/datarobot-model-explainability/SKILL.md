@@ -30,7 +30,8 @@ explanations, and interpreting model behavior using DataRobot's explainability A
 | SHAP for a filtered segment | `dr.DataSlice.create(...)` + `ShapMatrix.create(..., data_slice_id=...)` | Data slice definition |
 | XEMP-based prediction explanations | `dr.PredictionExplanations.create(...)` | Feature Impact; PE initialization; dataset uploaded |
 | Anomaly explanations (time series) | `AnomalyAssessmentRecord.compute(project_id, model_id, ...)` | Anomaly model |
-| ROC curve / lift chart / confusion matrix | `model.get_roc_curve()` / `model.get_lift_chart()` | Validation data |
+| ROC / lift / confusion (insights) | `RocCurve` / `LiftChart` / `ConfusionMatrix`.create(entity_id=model_id) | Validation data |
+| ROC / lift / confusion (Model helpers) | `model.get_roc_curve()` / `model.get_lift_chart()` / `model.get_confusion_chart()` | Validation data |
 
 **Universal SHAP is the preferred path** - no dataset pre-upload or Feature Impact step required.
 
@@ -62,7 +63,8 @@ Use this skill when you need to:
 
 - Apply `dr.DataSlice` filters to SHAP insights
 - Use anomaly assessment records for time series anomaly explanations
-- Retrieve diagnostics returned as `ConfusionChart`, `LiftChart`, and `FeatureEffects` objects
+- Retrieve diagnostics via `datarobot.insights` (`RocCurve`, `LiftChart`, `ConfusionMatrix`) or Model helpers
+- Retrieve partial dependence via `model.get_feature_effect()` (`FeatureEffects` objects)
 
 ---
 
@@ -135,8 +137,15 @@ from datarobot.insights import ShapImpact
 job = ShapImpact.compute(entity_id=model_id, source="training")
 result = job.get_result_when_complete()
 
-for name, norm, unnorm in result.shap_impacts:
-    print(f"{name}: {norm:.4f} (normalized), {unnorm:.4f} (raw)")
+for item in result.shap_impacts:
+    if isinstance(item, dict):
+        print(
+            f"{item['feature_name']}: {item['impact_normalized']:.4f} (normalized), "
+            f"{item['impact_unnormalized']:.4f} (raw)"
+        )
+    else:
+        name, norm, unnorm = item
+        print(f"{name}: {norm:.4f} (normalized), {unnorm:.4f} (raw)")
 ```
 
 **When to use**: Global feature importance. Prefer over `model.get_feature_impact()` when you
@@ -289,9 +298,9 @@ model_id = "YOUR_MODEL_ID"
 record = AnomalyAssessmentRecord.compute(
     project_id=project_id,
     model_id=model_id,
-    backtest=0,           # which backtest window (0-indexed)
-    source="validation",  # or 'holdout'
-    series_id=None,       # optional: filter to a specific series
+    backtest=0,           # backtest index (int) or "holdout"
+    source="validation",  # "training" or "validation" only
+    series_id=None,       # required for multiseries projects
 )
 
 preview = record.get_predictions_preview()
@@ -316,20 +325,43 @@ ranged = record.get_explanations(
 
 ## Model diagnostics
 
-Model helper methods are still the usual SDK entry point for these diagnostics. The returned
-objects correspond to the SDK insight types `LiftChart`, `ConfusionChart`, and `FeatureEffects`.
+Use the same `entity_id=model_id` pattern as SHAP insights. `FeatureEffects` / partial dependence
+is still retrieved through Model helpers (not in `datarobot.insights`).
+
+### Insights diagnostics (preferred — matches SHAP API)
+
+```python
+from datarobot.insights import RocCurve, LiftChart, ConfusionMatrix
+
+model_id = "YOUR_MODEL_ID"
+
+# Blocking compute + retrieve (default source='validation')
+roc = RocCurve.create(entity_id=model_id)
+print(roc.auc, len(roc.roc_points))
+
+lift = LiftChart.create(entity_id=model_id)
+print(lift.bins)
+
+confusion = ConfusionMatrix.create(entity_id=model_id)
+print(confusion.global_metrics, confusion.confusion_matrix_data)
+
+# Optional: non-blocking compute, or pass data_slice_id=... from dr.DataSlice
+job = RocCurve.compute(entity_id=model_id)
+roc = job.get_result_when_complete()
+```
+
+### Model helpers (alternative)
 
 ```python
 model = dr.Model.get(project=project_id, model_id=model_id)
 
-# ROC curve (binary classification)
 roc = model.get_roc_curve(source="validation")
 lift = model.get_lift_chart(source="validation")
-confusion = model.get_confusion_matrix(source="validation")
+confusion = model.get_confusion_chart(source="validation")
 
-# Feature Impact (non-SHAP, faster) and partial dependence / feature effects
+# Feature Impact (non-SHAP) and Feature Effects (partial dependence for top features)
 fi = model.get_feature_impact()
-pd_data = model.get_partial_dependence(feature_name="income")
+feature_effects = model.get_feature_effect(source="validation")
 ```
 
 ---

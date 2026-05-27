@@ -108,15 +108,15 @@ Blocking call.
 
 Non-blocking. Returns job; call `job.get_result_when_complete()`.
 
-### `ShapImpact.get(entity_id)` / `ShapImpact.list(entity_id)`
+### `ShapImpact.get(entity_id, source='training', ...)` / `ShapImpact.list(entity_id)`
 
-Retrieve existing ShapImpact results.
+Retrieve existing ShapImpact results. Pass `source='training'` (the only supported partition).
 
 ### Attributes
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `shap_impacts` | list[list] | List of `[feature_name, normalized_impact, unnormalized_impact]` |
+| `shap_impacts` | list | Each entry is `[feature_name, normalized, unnormalized]` or a dict with `feature_name`, `impact_normalized`, `impact_unnormalized` |
 | `base_value` | float or list[float] | Baseline prediction value(s) |
 | `row_count` | int | Number of rows used for computation |
 | `capping` | bool | Whether extreme SHAP values were capped |
@@ -196,6 +196,21 @@ Non-blocking.
 |-----------|------|-------------|
 | `features` | list[dict] | Per-feature distribution data |
 | `total_features_count` | int | Total number of features |
+
+---
+
+## Insights diagnostics (non-SHAP)
+
+Same `BaseInsight` pattern as SHAP: `create`, `compute`, `get`, `list` with `entity_id=model_id`.
+
+| Class | Import | Notable result attributes |
+|-------|--------|---------------------------|
+| `RocCurve` | `from datarobot.insights import RocCurve` | `auc`, `roc_points` |
+| `LiftChart` | `from datarobot.insights import LiftChart` | `bins` |
+| `ConfusionMatrix` | `from datarobot.insights import ConfusionMatrix` | `confusion_matrix_data`, `global_metrics` |
+
+`FeatureEffects` / partial dependence is not in `datarobot.insights`; use
+`model.get_feature_effect(source=...)` or `model.get_or_request_feature_effect(...)`.
 
 ---
 

@@ -21,7 +21,7 @@ Source: https://datarobot-public-api-client.readthedocs-hosted.com/en/latest-rel
 
 ## Prerequisites
 
-Both must be satisfied before calling `PredictionExplanations.create()`:
+All must be satisfied before calling `PredictionExplanations.create()`:
 
 1. **Feature Impact computed**:
    ```python
@@ -33,6 +33,8 @@ Both must be satisfied before calling `PredictionExplanations.create()`:
    ```python
    dr.PredictionExplanationsInitialization.create(project_id=project_id, model_id=model_id)
    ```
+
+3. **Scoring dataset uploaded** to the AI Catalog (`dataset_id` passed to `.create()`).
 
 ---
 
