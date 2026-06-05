@@ -16,8 +16,7 @@ permissions:
 jobs:
   route:
     if: >-
-      github.event_name != 'issue_comment'
-      || contains(github.event.comment.body, '/review')
+      github.event_name != 'issue_comment' || contains(github.event.comment.body, '/review')
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub App token
