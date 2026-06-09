@@ -2,6 +2,10 @@
 
 This file provides instructions for an agent to use DataRobot skills. An agent will automatically load these instructions when working with DataRobot-related tasks.
 
+## DataRobot Authentication
+
+If any DataRobot skill fails due to missing or invalid credentials, invoke `datarobot-setup` before retrying the original task. Do not print manual instructions — run the skill.
+
 ## Should I Add a Skill Here?
 
 There are many places you can add skills for use. This repository is for customer facing skills that help other build more effectively in DataRobot. Here is the goal, intended use, and criteria for determining if your skill is correct for this library.
