@@ -1,15 +1,22 @@
 # Copyright (c) 2026 DataRobot, Inc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Poll a server-side artifact image build until terminal state.
+"""Poll a server-side artifact image build until the image is deployable.
 
-Works for both build flows:
-  - Image-first builds may report status as BUILT or COMPLETED (uppercase).
-  - Code-to-Workload (C2W) builds report status as `completed` (lowercase).
-Status is uppercased before comparison so both shapes succeed.
+IMPORTANT: only COMPLETED means the image is pushed to the registry and
+deployable. BUILT is an intermediate state — the image has been built
+locally but NOT yet pushed.  Scheduling a workload on a BUILT artifact
+returns `422 runtime_image_uri ... None` because the registry can't
+resolve the imageUri yet.  This script waits for COMPLETED specifically;
+BUILT keeps polling.
 
-Reads DATAROBOT_ENDPOINT (must include /api/v2) and DATAROBOT_API_TOKEN from
-the environment.  Exits 0 on success, 2 on FAILED (prints last 2KB of build
-logs to stderr), 3 on timeout.
+Build progression: pending → in-progress → BUILT (built, not yet pushed)
+→ COMPLETED (pushed, deployable). Lowercase variants (`completed`,
+`failed`) from the C2W flow are normalized to uppercase before
+comparison.
+
+Reads DATAROBOT_ENDPOINT (must include /api/v2) and DATAROBOT_API_TOKEN
+from the environment.  Exits 0 on COMPLETED, 2 on FAILED (prints last
+2KB of build logs to stderr), 3 on timeout.
 
 Usage:
     python wait_for_build.py <artifact_id> <build_id> [--timeout SECONDS] [--interval SECONDS]
@@ -25,7 +32,9 @@ from typing import Any, cast
 
 import httpx
 
-SUCCESS = {"BUILT", "COMPLETED"}
+# Only COMPLETED means the image is pushed to the registry and deployable.
+# BUILT is intermediate (built locally, not yet pushed) — keep polling.
+SUCCESS = {"COMPLETED"}
 FAILURE = {"FAILED"}
 
 Headers = dict[str, str]
@@ -114,8 +123,9 @@ def main() -> int:
         return 3
 
     print(
-        f"\nBUILD {b.get('status', '?')}.  Artifact's imageUri is now populated by the platform — "
-        f"GET /artifacts/{args.artifact_id}/ to confirm."
+        f"\nBUILD COMPLETED — image pushed to the registry. "
+        f"Artifact's imageUri is now populated; GET /artifacts/{args.artifact_id}/ to confirm "
+        f"before scheduling a workload."
     )
     return 0
 

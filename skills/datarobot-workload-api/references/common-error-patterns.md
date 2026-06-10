@@ -117,6 +117,17 @@ Covered above under `exec format error`. The signature is:
 - Build was on Apple Silicon (`uname -m` = `arm64`) without `--platform linux/amd64`
 - Image manifest lacks an `amd64` entry — `docker buildx imagetools inspect <ref>` shows only `arm64`
 
+## `POST /workloads/` returns `422 runtime_image_uri ... None`
+
+The build hasn't pushed the image to the registry yet, so the workload can't be scheduled.
+
+Two causes (in order of likelihood):
+
+1. **The build is still `BUILT`, not `COMPLETED`** — the most common case. `BUILT` means the image was built locally on the build host but **has NOT been pushed to the registry yet**. `COMPLETED` is the only state where the image is deployable. Sequence: `PENDING` → `IN_PROGRESS` → `BUILT` → `COMPLETED`. The gap between `BUILT` and `COMPLETED` can be seconds to minutes for large images. Fix: wait for `COMPLETED` specifically (`scripts/wait_for_build.py` does this).
+2. **Race condition (RAPTOR-17673)** — even after `COMPLETED`, the registry can briefly lag and the image isn't yet resolvable. Fix: wait a few seconds and retry the workload create. Platform-side fix in flight.
+
+If the build status is `FAILED`, the workload create will also 422 — but in that case the fix is to investigate the build, not retry the workload create. See the C2W reference's failure-modes section.
+
 ## Diagnostic decision tree
 
 When you don't know which pattern applies:

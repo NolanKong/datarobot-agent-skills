@@ -49,7 +49,7 @@ Also: don't include `spec.type` in PATCH bodies — it's a read-only discriminat
 If the artifact was created with `imageBuildConfig` referencing source code in DataRobot Files, the platform can build the image. Triggered with `POST /artifacts/{id}/builds/`; poll via `scripts/wait_for_build.py`. Two non-spec behaviors:
 
 - On success, the platform **populates the artifact's `imageUri` automatically**. Re-`GET` the artifact to see it; don't PATCH it manually. If both `imageBuildConfig` and `imageUri` are supplied at create time, the build overwrites `imageUri` on completion.
-- Success status can be either `BUILT` or `COMPLETED` depending on platform version — treat both as terminal-success.
+- Status sequence: `PENDING` → `IN_PROGRESS` → `BUILT` → `COMPLETED` (or → `FAILED`). **`BUILT` is intermediate** — image built locally but not yet pushed to the registry. Only `COMPLETED` is deployable; scheduling a workload on a `BUILT` artifact returns `422 runtime_image_uri ... None`. `wait_for_build.py` waits for `COMPLETED` specifically.
 - Only drafts can build. Builds for locked artifacts can't be triggered or deleted.
 
 ## Rolling replacement — non-idempotent, 404-after-completion

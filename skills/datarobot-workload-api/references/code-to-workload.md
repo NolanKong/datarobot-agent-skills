@@ -111,13 +111,28 @@ curl -sS -X POST "${DATAROBOT_ENDPOINT}/artifacts/${ARTIFACT_ID}/builds" \
 
 Response: `202 Accepted` with `{"buildIds": ["<build_id>", ...]}`.
 
-Poll with `python scripts/wait_for_build.py <artifact_id> <build_id>` — the script accepts both this flow's enum and the uppercase variants from other build flows.
+Poll with `python scripts/wait_for_build.py <artifact_id> <build_id>`.
 
-Build status enum for C2W: `pending` → `in-progress` → `completed` (lowercase, dash-cased). Failure terminal state: `failed`. The script's `.upper()` normalization treats `completed` and `COMPLETED` as equivalent successes.
+**Build status progression — `BUILT` is NOT terminal-success:**
+
+```
+pending → in-progress → BUILT → COMPLETED       (or → FAILED)
+```
+
+- `BUILT` means the image was built locally on the build host but **has NOT been pushed to the registry yet**.
+- `COMPLETED` means the image is built AND pushed to the registry — **only then is it deployable**.
+- Scheduling a workload on an artifact whose build is `BUILT` (not yet `COMPLETED`) returns `422 runtime_image_uri ... None` because the registry can't resolve the imageUri yet.
+- The gap between `BUILT` and `COMPLETED` can be **seconds to minutes** for large images.
+
+So: **wait for `COMPLETED` specifically. Never trust `BUILT` as a green-light.** `wait_for_build.py` enforces this — `BUILT` keeps polling, only `COMPLETED` exits success.
+
+C2W flows have also been observed reporting lowercase `pending` / `in-progress` / `completed` / `failed`. The poller's `.upper()` normalization treats `completed` and `COMPLETED` as equivalent terminal-success.
 
 For real-time build logs, `GET /artifacts/{id}/builds/{bid}/logs` returns **plain text** (not JSON) — the Docker build output. Read it when the user wants to see why a build failed.
 
-After a successful build, the artifact's `imageUri` is populated automatically. Re-`GET` the artifact to confirm and to surface the new image reference to the user. Do not PATCH `imageUri` manually.
+After `COMPLETED`, the artifact's `imageUri` is populated automatically. Re-`GET` the artifact to confirm and surface the new image reference. Do not PATCH `imageUri` manually.
+
+> **Known race condition (RAPTOR-17673):** even after `COMPLETED`, the image can briefly be unschedulable while the registry catches up — workload create returns `422 runtime_image_uri ... None`. If you hit this, wait a few seconds and retry the workload create. Platform-side fix in flight.
 
 ## `dockerfile.source` modes
 
@@ -142,6 +157,7 @@ Each `dr workload code sync` creates a new catalog version. Each build produces 
 | Build status `failed` with missing-dependency error | `pyproject.toml` doesn't list a required package | User adds dependency, `uv lock`, sync, rebuild |
 | Build status stuck on `in-progress` past 5 min for small projects | Build queue contention or platform-side delay | Continue polling; check `/builds/{bid}/logs/` for output progress |
 | Artifact `imageUri` still `"placeholder:latest"` after build `completed` | Build succeeded but artifact write didn't propagate (rare) | Re-`GET` the artifact; if still placeholder, file a platform bug |
+| `POST /workloads/` returns `422 runtime_image_uri ... None` after `COMPLETED` | Race condition (RAPTOR-17673): registry hasn't caught up post-push | Wait a few seconds and retry. Don't treat `BUILT` as deployable — that's the most common cause of this 422 |
 
 ## State map
 

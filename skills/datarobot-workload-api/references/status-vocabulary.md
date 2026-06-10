@@ -42,9 +42,14 @@ For symptom → fix mapping (CrashLoopBackOff, OOMKilled, etc.), see `references
 
 ## Build status
 
+Sequence: `PENDING` → `IN_PROGRESS` → `BUILT` → `COMPLETED` (or → `FAILED`). Lowercase variants (`pending` / `in-progress` / `completed` / `failed`) are also returned by some flows — normalize to uppercase before comparing.
+
 - `PENDING` / `IN_PROGRESS` — keep polling.
-- `BUILT` or `COMPLETED` — terminal success. **Both** are valid success values depending on platform version; treat as equivalent.
+- **`BUILT` — image built locally but NOT yet pushed to the registry. NOT deployable.** A workload scheduled on an artifact at `BUILT` returns `422 runtime_image_uri ... None`. Keep polling. The gap from `BUILT` to `COMPLETED` can be seconds to minutes for large images.
+- `COMPLETED` — built AND pushed; only now is the image deployable.
 - `FAILED` — terminal failure. Pull `/artifacts/{id}/builds/{bid}/logs/` for the cause.
+
+The `wait_for_build.py` script enforces this: only `COMPLETED` exits success, `BUILT` keeps polling.
 
 ## Replacement status
 
