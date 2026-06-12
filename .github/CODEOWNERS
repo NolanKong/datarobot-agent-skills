@@ -3,8 +3,6 @@
 # Default owner for repo scaffolding, CI, docs, and anything outside skills/
 * @datarobot-oss/agent-skills-maintainers
 
-/.github/workflows/review-router.yml @andriykislitsyn
-
 # Agent assist team skills
 /skills/datarobot-agent-assist/ @datarobot/agentic-assistant
 
