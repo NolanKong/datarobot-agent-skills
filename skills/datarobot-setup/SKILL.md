@@ -1,6 +1,6 @@
 ---
 name: datarobot-setup
-description: Sets up DataRobot for local development including Python SDK, dr-cli, Agent Assist, and all required dependencies. Use when the user has not yet worked with DataRobot on this machine and wants to deploy agents to DataRobot, build an agent from scratch, or connect to DataRobot's APIs from a new project.
+description: Sets up DataRobot for local development including Python SDK, dr-cli, Agent Assist, and all required dependencies. Use when the user has not yet worked with DataRobot on this machine, OR when any DataRobot task fails due to missing or invalid credentials. Covers first-time setup, re-authentication, and credential recovery.
 ---
 
 # DataRobot Local Development Setup
@@ -29,8 +29,15 @@ dr plugin list 2>/dev/null | grep -i assist
 python3 -c "import datarobot; print(datarobot.__version__)" 2>/dev/null
 python3 -c "import datarobot_predict; print('datarobot-predict installed')" 2>/dev/null
 
-# dr-cli auth state
-test -f ~/.config/datarobot/drconfig.yaml && echo "dr-cli already configured"
+# Credential state
+echo "DATAROBOT_API_TOKEN: ${DATAROBOT_API_TOKEN:+set (via env)}"
+echo "DATAROBOT_ENDPOINT:  ${DATAROBOT_ENDPOINT:-not set}"
+test -f ~/.config/datarobot/drconfig.yaml && echo "drconfig: found" || echo "drconfig: missing"
+
+# If drconfig exists, verify credentials are actually valid
+if test -f ~/.config/datarobot/drconfig.yaml; then
+  dr auth check 2>/dev/null && echo "auth: valid" || echo "auth: INVALID (re-authentication required)"
+fi
 ```
 
 Compare each detected version to the minimums in the table in Step 3. Tell the user:

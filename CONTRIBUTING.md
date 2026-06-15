@@ -134,6 +134,7 @@ Install these tools before running validation tasks:
 
 - [Task](https://taskfile.dev/)&mdash;task runner (`brew install go-task`).
 - [uv](https://docs.astral.sh/uv/)&mdash;Python package and environment manager (`curl -LsSf https://astral.sh/uv/install.sh | sh`).
+- [license-eye](https://github.com/apache/skywalking-eyes)&mdash;license header checker (`go install github.com/apache/skywalking-eyes/cmd/license-eye@latest`, then ensure `~/go/bin` is on your PATH).
 
 ### Common tasks
 
