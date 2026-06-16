@@ -137,7 +137,15 @@ Tell the user what you detected and present the changes you will make:
    - `DATAROBOT_ENTITY_ID` — `experiment_container-<use_case_id>` (Use Case target; or `deployment-<id>` if a shell deployment was created instead)
    - `DATAROBOT_OTEL_ENDPOINT` — `{DATAROBOT_ENDPOINT}/otel`
 
-3. Explain what they'll see in DataRobot. For a Use Case target, traces appear at `{DATAROBOT_ENDPOINT_BASE}/usecases/<use_case_id>/tracing`:
+3. Explain how to view the telemetry. For a Use Case target, use the `dr` CLI's `xp`
+   plugin (works in a local terminal or DataRobot Codespaces); this is the `view_command`
+   returned by `create_use_case.py`:
+   ```bash
+   dr plugin install xp                                   # one-time
+   dr xp --entity-id <use_case_id> --enable-logs --enable-metrics
+   #     ^ the BARE use_case_id, NOT the experiment_container- prefixed form
+   ```
+   Then open the local panel at `http://127.0.0.1:8090`. You'll see:
    - **Tracing**: Span hierarchy (agent orchestration, LLM calls, tool calls)
    - **Logs**: Structured logs correlated with traces via traceId
    - **Metrics**: Custom metrics (request count, latency, LLM calls, tool calls)
@@ -203,7 +211,7 @@ Returns JSON:
   "use_case_id": "6123abc",
   "entity_id": "experiment_container-6123abc",
   "otel_endpoint": "https://app.datarobot.com/otel",
-  "tracing_url": "https://app.datarobot.com/usecases/6123abc/tracing"
+  "view_command": "dr xp --entity-id 6123abc --enable-logs --enable-metrics"
 }
 ```
 

@@ -41,13 +41,19 @@ def _base_url(api_endpoint: str) -> str:
 
 
 def _result(use_case: dr.UseCase, api_endpoint: str) -> dict:
-    """Build the telemetry-target descriptor for a Use Case."""
-    base = _base_url(api_endpoint)
+    """Build the telemetry-target descriptor for a Use Case.
+
+    Two id forms for the same Use Case, used in different places:
+      * ``entity_id`` (``experiment_container-<id>``) — the OTel export header /
+        ``DATAROBOT_ENTITY_ID`` at runtime.
+      * ``view_command`` uses the *bare* ``use_case.id`` — ``dr xp`` expects the
+        unprefixed id (``--entity-type`` defaults to ``experiment_container``).
+    """
     return {
         "use_case_id": use_case.id,
         "entity_id": f"experiment_container-{use_case.id}",
-        "otel_endpoint": f"{base}/otel",
-        "tracing_url": f"{base}/usecases/{use_case.id}/tracing",
+        "otel_endpoint": f"{_base_url(api_endpoint)}/otel",
+        "view_command": f"dr xp --entity-id {use_case.id} --enable-logs --enable-metrics",
     }
 
 
@@ -62,7 +68,7 @@ def resolve_use_case(
         use_case_id: Existing Use Case ID to validate and reuse (validate mode).
 
     Returns:
-        Dict with use_case_id, entity_id, otel_endpoint, and tracing_url.
+        Dict with use_case_id, entity_id, otel_endpoint, and view_command.
     """
     token = os.getenv("DATAROBOT_API_TOKEN")
     endpoint = os.getenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
@@ -91,7 +97,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Resolve a DataRobot Use Case as an external agent OTel target"
     )
-    parser.add_argument(
+    # Validate an existing Use Case or create a new one — exactly one, never both.
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument(
+        "--use-case-id",
+        dest="use_case_id",
+        help="Existing Use Case ID to validate and reuse (validate mode)",
+    )
+    target.add_argument(
         "--name",
         help="Display name for a new Use Case (create mode)",
     )
@@ -100,19 +113,7 @@ if __name__ == "__main__":
         default="",
         help="Optional description for the new Use Case (auto-generated if omitted)",
     )
-    parser.add_argument(
-        "--use-case-id",
-        dest="use_case_id",
-        help="Existing Use Case ID to validate and reuse (validate mode)",
-    )
     args = parser.parse_args()
-
-    if not args.name and not args.use_case_id:
-        print(
-            "Error: provide either --use-case-id (existing) or --name (create new)",
-            file=sys.stderr,
-        )
-        sys.exit(1)
 
     try:
         result = resolve_use_case(args.name, args.description, args.use_case_id)
