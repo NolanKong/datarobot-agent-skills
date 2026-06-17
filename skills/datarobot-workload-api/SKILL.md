@@ -67,41 +67,40 @@ Python fallback: only `print()` the specific key, never the parsed dict. Path-ke
 
 ## Run a container as a workload (the 90% case)
 
-```python
-import os, httpx
-
-base = os.environ["DATAROBOT_ENDPOINT"]
-headers = {"Authorization": f"Bearer {os.environ['DATAROBOT_API_TOKEN']}"}
-
-r = httpx.post(f"{base}/workloads/", headers=headers, json={
-    "name": "my-api-service",
-    "importance": "low",
-    "artifact": {
-        "name": "my-api-service-artifact",
-        "spec": {
-            "type": "service",
-            "containerGroups": [{"name": "default", "containers": [{
-                "name": "main",
-                "imageUri": "ghcr.io/org/my-app:latest",
-                "port": 8000,
-                "primary": True,
-                "readinessProbe": {"path": "/readyz", "port": 8000, "initialDelaySeconds": 10},
-                "livenessProbe":  {"path": "/healthz", "port": 8000, "initialDelaySeconds": 30},
-            }]}],
-        },
-    },
-    "runtime": {"containerGroups": [{
-        "name": "default",   # must match artifact.spec.containerGroups[].name (above)
-        "replicaCount": 1,
-        "containers": [{"name": "main",
-                        "resourceAllocation": {"cpu": 1, "memory": "512MB"}}],
-    }]},
-})
-r.raise_for_status()   # 400=schema/limit, 403=cap exceeded (run check_limits.py), 409=name conflict
-workload_id = r.json()["id"]
+```yaml
+# spec.yaml — JSON also accepted; spec is sent verbatim
+name: my-api-service
+importance: low
+artifact:
+  name: my-api-service-artifact
+  spec:
+    type: service
+    containerGroups:
+      - name: default
+        containers:
+          - name: main
+            imageUri: ghcr.io/org/my-app:latest
+            port: 8000
+            primary: true
+            readinessProbe: {path: /readyz, port: 8000, initialDelaySeconds: 10}
+            livenessProbe: {path: /healthz, port: 8000, initialDelaySeconds: 30}
+runtime:
+  containerGroups:
+    - name: default          # must match artifact.spec.containerGroups[].name (above)
+      replicaCount: 1
+      containers:
+        - name: main
+          resourceAllocation: {cpu: 1, memory: "512MB"}
 ```
 
-Then `python scripts/wait_for_running.py <workload_id>` to wait for `running`.
+```bash
+dr workload create --spec-file spec.yaml         # v0.2.74+; 4xx: 400=schema/limit, 403=cap (run check_limits.py), 409=name conflict
+dr workload get <workload_id>                    # or `dr workload status` — poll until status=running
+```
+
+Lifecycle one-liners (v0.2.74+): `dr workload {stop|start|delete|endpoint|list} <id>`.
+
+Raw fallback when CLI unavailable: `httpx.post(f"{base}/workloads/", headers=headers, json=spec)` + `r.raise_for_status()` + `r.json()["id"]`. Then `python scripts/wait_for_running.py <workload_id>`.
 
 **Critical gotchas:**
 
@@ -215,17 +214,19 @@ Always check `r.status_code` before `.json()`: 401 = bad token; 404 = workload n
 
 ## Logs
 
-```python
-r = httpx.get(f"{base}/otel/workload/{wid}/logs/", headers=headers, params={
-    "limit": 100,
-    "level": "error",          # EXACT severity (not a threshold) — pass "error" to triage errors
-    "includes": "traceback",   # case-sensitive substring on message body
-})
-for log in r.json().get("data", []):
-    print(f"[{log['timestamp']}] {log['level'].upper()}: {log['message']}")
+```bash
+dr workload logs <wid> --level error --limit 100   # v0.2.74+; --follow streams; --output-format json
 ```
 
-To filter to one proton (find proton IDs in section 2): `params = {"limit": 100, "searchKeys": "proton_id", "searchValues": "<pid>"}`. `searchKeys` / `searchValues` are positional parallel lists — for multiple attributes pass a **list of tuples** to httpx (dict can't repeat keys): `params = [("searchKeys", "proton_id"), ("searchValues", pid), ("searchKeys", "level"), ("searchValues", "error")]`.
+`--level` is an EXACT severity match (not a threshold). For substring filtering on the message body, or proton-scoped logs (find proton IDs in section 2), drop to REST — `dr workload logs` doesn't expose those filters:
+
+```python
+r = httpx.get(f"{base}/otel/workload/{wid}/logs/", headers=headers,
+              params=[("searchKeys", "proton_id"), ("searchValues", pid),
+                      ("searchKeys", "level"),     ("searchValues", "error")])
+```
+
+`searchKeys` / `searchValues` are positional parallel lists — pass a **list of tuples** to httpx (dict can't repeat keys). `includes=<substring>` does case-sensitive substring filtering on the message body.
 
 ## Traces
 
@@ -267,7 +268,7 @@ An **artifact** is the immutable-after-lock definition of what a workload runs (
 
 To change a running workload's image / env vars / probes / port, find its current artifact (`workload["artifactId"]`) and check `artifact["status"]`. If `draft`: PATCH in place → `POST /workloads/{id}/replacement/`. If `locked`: clone → PATCH the clone → lock it → `POST /workloads/{id}/replacement/`.
 
-**Lock an artifact:** `PATCH /artifacts/{id}/ {"status": "locked"}`. No `POST /artifacts/{id}/lock/`. For a draft already running on a workload, use `promote` (no restart).
+**Lock an artifact:** `dr artifact lock <id>` (v0.2.74+) — equivalent to `PATCH /artifacts/{id}/ {"status": "locked"}`. No `POST /artifacts/{id}/lock/`. For a draft already running on a workload, use `promote` (no restart).
 
 **Replacement status-match rule:** `400 {"detail": "Artifact status mismatch: ..."}` unless the new artifact's status matches the running one's. draft↔draft, locked↔locked. Check before calling.
 
