@@ -1,6 +1,6 @@
 # Code-to-Workload (C2W) — agent reference
 
-The `dr` CLI subcommands referenced here (`dr workload artifact create`, `dr workload code init`, `dr workload code sync`, `dr workload code versions`, `dr workload code checkout`) are the eventual surface — some are not yet shipped in the public `dr` CLI. Each step below also lists the raw HTTP fallback so the agent can drop down to the REST endpoints when a CLI subcommand isn't available.
+The `dr` CLI subcommands referenced here (`dr artifact create`, `dr artifact code init`, `dr artifact code sync`, `dr artifact code versions`, `dr artifact code checkout`, `dr artifact build create`, `dr artifact build logs`, `dr artifact lock`, `dr workload create`, `dr workload get`, `dr workload logs`) ship in **dr CLI v0.2.74+** behind the `DATAROBOT_CLI_FEATURE_WORKLOAD=true` feature flag. Each step below also lists the raw HTTP fallback so the agent can drop down to the REST endpoints when the CLI isn't installed or when a flag is unset.
 
 ## When to reach for C2W
 
@@ -12,7 +12,7 @@ Don't use C2W when the user already has an image in an accessible registry — t
 
 - `ENABLE_WORKLOAD_API_CONTAINERS=true` on the org (admin-set feature flag). If absent, `POST /artifacts/{id}/builds` returns a feature-flag error; the agent should fall back to bring-your-own-image or surface the gap to the user.
 - `DATAROBOT_CLI_FEATURE_WORKLOAD=true` exported client-side, plus `DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` already set.
-- The `dr` CLI installed (`https://github.com/datarobot-oss/cli`).
+- The `dr` CLI installed at **v0.2.74 or newer** (`https://github.com/datarobot-oss/cli`). Verify with `dr --version`. The `artifact` and `workload` namespaces are hidden until the feature flag is set, so a `dr --help` that doesn't list them just means the flag is missing.
 - An Execution Environment with `sourceDockerImageUri` — used as the base image for the generated Dockerfile. See the next section for how to find one.
 
 ## Finding an Execution Environment
@@ -68,10 +68,10 @@ The artifact created for a C2W flow is `draft` with `imageUri: "placeholder:late
 }
 ```
 
-Create it. CLI:
+Create it. CLI (v0.2.74+):
 
 ```shell
-dr workload artifact create --spec-file /tmp/spec.json --output-format json
+dr artifact create --spec-file /tmp/spec.json --output-format json
 ```
 
 Raw fallback:
@@ -84,7 +84,7 @@ curl -sS -X POST "${DATAROBOT_ENDPOINT}/artifacts/" \
 
 ## Linking a project directory + syncing source
 
-`dr workload code init <artifact_id>` writes a `.wapi/` directory in the project root that tracks which artifact this directory belongs to. `dr workload code sync` then:
+`dr artifact code init <artifact_id>` writes a `.wapi/` directory in the project root that tracks which artifact, catalog, and version this directory is bound to (conceptually similar to `.git/`). `dr artifact code sync` then:
 
 1. Zips the project directory (respects `.dockerignore`).
 2. Uploads the zip to the Files API as a new catalog version.
@@ -101,7 +101,14 @@ If the CLI isn't available, the agent can reproduce sync manually: `POST /api/v2
 
 ## Triggering and watching a build
 
-`POST` an empty body — `codeRef` on the artifact already tells the build system where to find the source:
+CLI (v0.2.74+) — when run from a directory linked via `dr artifact code init`, the artifact id is read from `.wapi/config.json` and can be omitted:
+
+```shell
+dr artifact build create                 # uses linked artifact
+dr artifact build create <artifact_id>   # explicit
+```
+
+Raw fallback (empty body — `codeRef` on the artifact already tells the build system where to find the source):
 
 ```shell
 curl -sS -X POST "${DATAROBOT_ENDPOINT}/artifacts/${ARTIFACT_ID}/builds" \
@@ -111,7 +118,7 @@ curl -sS -X POST "${DATAROBOT_ENDPOINT}/artifacts/${ARTIFACT_ID}/builds" \
 
 Response: `202 Accepted` with `{"buildIds": ["<build_id>", ...]}`.
 
-Poll with `python scripts/wait_for_build.py <artifact_id> <build_id>`.
+Poll with `python scripts/wait_for_build.py <artifact_id> <build_id>` (enforces the BUILT-vs-COMPLETED distinction below). The CLI's `dr artifact build get <build_id>` returns the current status if the agent wants a one-shot check rather than blocking polling.
 
 **Build status progression — `BUILT` is NOT terminal-success:**
 
@@ -128,7 +135,7 @@ So: **wait for `COMPLETED` specifically. Never trust `BUILT` as a green-light.**
 
 C2W flows have also been observed reporting lowercase `pending` / `in-progress` / `completed` / `failed`. The poller's `.upper()` normalization treats `completed` and `COMPLETED` as equivalent terminal-success.
 
-For real-time build logs, `GET /artifacts/{id}/builds/{bid}/logs` returns **plain text** (not JSON) — the Docker build output. Read it when the user wants to see why a build failed.
+For real-time build logs, use `dr artifact build logs <build_id>` (v0.2.74+) or raw `GET /artifacts/{id}/builds/{bid}/logs` which returns **plain text** (not JSON) — the Docker build output. Read it when the user wants to see why a build failed.
 
 After `COMPLETED`, the artifact's `imageUri` is populated automatically. Re-`GET` the artifact to confirm and surface the new image reference. Do not PATCH `imageUri` manually.
 
@@ -143,16 +150,20 @@ The agent should default to `generated` unless the user explicitly asks otherwis
 
 ## Iteration loop
 
-User edits source → `dr workload code sync` → `POST /artifacts/{id}/builds` (empty body, new build_id) → wait for completion → `POST /workloads/{wid}/replacement/` to roll the running workload onto the new image (see SKILL.md section 4 for the replacement shape).
+User edits source → `dr artifact code sync` → `dr artifact build create` → wait for `COMPLETED` → `POST /workloads/{wid}/replacement/` to roll the running workload onto the new image (see SKILL.md section 4 for the replacement shape).
 
-Each `dr workload code sync` creates a new catalog version. Each build produces a new image. The artifact tracks the current image. `dr workload code versions` lists the catalog versions for an artifact (i.e. its code history); `dr workload code checkout <version_id>` downloads a previous version for local inspection or rollback.
+Each `dr artifact code sync` creates a new catalog version. Each build produces a new image. The artifact tracks the current image. `dr artifact code versions` lists the catalog versions for an artifact (i.e. its code history); `dr artifact code checkout <version_id>` downloads a previous version into `.wapi/.checkouts/` for read-only inspection or rollback.
+
+## Locking for production
+
+Once a draft artifact builds cleanly and the workload runs the way the user wants, `dr artifact lock <artifact_id>` (v0.2.74+) promotes the draft to **locked** — name, description, and spec become immutable, the artifact gets a version number, and it can never be deleted or unlocked. The CLI is the equivalent of `PATCH /artifacts/{id}/ {"status": "locked"}` and validates build completeness server-side: every container built from source must have its code uploaded and a build `COMPLETED`, otherwise the lock is rejected with a message naming the gap.
 
 ## Failure modes the agent should recognize
 
 | Symptom | Likely cause | Action |
 |---|---|---|
 | `POST /builds/` returns a feature-flag error | `ENABLE_WORKLOAD_API_CONTAINERS=false` on the org | Surface to user; fall back to bring-your-own-image if they have an alternative |
-| Build status `failed` with "lock file mismatch" in logs | `pyproject.toml` updated but `uv.lock` wasn't regenerated | User runs `uv lock` locally, `dr workload code sync` again, new build |
+| Build status `failed` with "lock file mismatch" in logs | `pyproject.toml` updated but `uv.lock` wasn't regenerated | User runs `uv lock` locally, `dr artifact code sync` again, new build |
 | Build status `failed` with "unreachable base image" in logs | EE's `sourceDockerImageUri` not pullable from the build host | Try a different EE, or report to admin |
 | Build status `failed` with missing-dependency error | `pyproject.toml` doesn't list a required package | User adds dependency, `uv lock`, sync, rebuild |
 | Build status stuck on `in-progress` past 5 min for small projects | Build queue contention or platform-side delay | Continue polling; check `/builds/{bid}/logs/` for output progress |
@@ -165,11 +176,18 @@ Each `dr workload code sync` creates a new catalog version. Each build produces 
 |---|---|
 | Artifact `imageUri` | Set to `"placeholder:latest"` on create; populated by the build on success |
 | Artifact `imageBuildConfig` | Persists across rebuilds; the build instruction set |
-| Artifact `codeRef` | Pointer to the catalog version with source code; updated each `dr workload code sync` |
-| Catalog versions | Immutable snapshots of synced source; listed by `dr workload code versions` |
+| Artifact `codeRef` | Pointer to the catalog version with source code; updated each `dr artifact code sync` |
+| Catalog versions | Immutable snapshots of synced source; listed by `dr artifact code versions` |
 | Builds | `POST /artifacts/{id}/builds/` produces one; listed by `GET /artifacts/{id}/builds/` |
 | Workload | References artifact by `artifactId`; runs whatever image the artifact currently points at |
 
 ## Cleanup sequence
 
-When the user is done experimenting and asks the agent to tear it all down: `POST /workloads/{wid}/stop` → `DELETE /workloads/{wid}` → `DELETE /artifacts/{aid}` → remove `.wapi/` from the project directory. (Order matters: stop before delete on the workload; delete the workload before the artifact since the workload references it.)
+When the user is done experimenting and asks the agent to tear it all down (CLI v0.2.74+ in parens, raw REST also works):
+
+1. `dr workload stop <wid>` (`POST /workloads/{wid}/stop`)
+2. `dr workload delete <wid>` (`DELETE /workloads/{wid}`)
+3. `dr artifact delete <aid>` (`DELETE /artifacts/{aid}`) — **only drafts can be deleted**; locked artifacts are permanent
+4. Remove `.wapi/` from the project directory
+
+Order matters: stop before delete on the workload; delete the workload before the artifact since the workload references it.

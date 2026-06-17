@@ -280,7 +280,7 @@ For runtime-only changes (replicas / resources / autoscaling), use section 1's `
 The Workload API does **not yet accept image-pull credentials at workload creation** — the artifact's `imageUri` must point at a registry DataRobot can already pull from. Two paths:
 
 1. **Bring your own image** — when the image lives in a public registry (`ghcr.io/org/app:tag`, Docker Hub public) or one the org admin pre-configured. Build locally with `docker buildx ... --platform linux/amd64`, push, reference via `imageUri`. The default flow used throughout this skill.
-2. **Code-to-Workload (C2W)** — when you can't publish (no local Docker, no public registry, admin can't add pull credentials). The `dr` CLI uploads source code (`dr workload code init` + `code sync`); `POST /artifacts/{id}/builds` triggers a platform build that pushes to DataRobot's **internal** registry and populates `imageUri`. From there, identical to bring-your-own-image. Full flow in `references/code-to-workload.md`.
+2. **Code-to-Workload (C2W)** — when you can't publish (no local Docker, no public registry, admin can't add pull credentials). `dr` CLI v0.2.74+ uploads source (`dr artifact code init` + `sync`), `dr artifact build create` triggers a platform build that pushes to DataRobot's **internal** registry and populates `imageUri`. From there, identical to bring-your-own-image. Full flow in `references/code-to-workload.md`.
 
 Poll either path with `python scripts/wait_for_build.py <artifact_id> <build_id>`. Only drafts can build.
 
