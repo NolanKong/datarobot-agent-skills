@@ -167,6 +167,8 @@ Available skills (in datarobot-* folders):
 - datarobot-app-framework-cicd: CI/CD pipelines for DataRobot application templates
 - datarobot-external-agent-monitoring: External agent OTel instrumentation for DataRobot monitoring
 - datarobot-agent-assist: Building and deploying agents
+- datarobot-setup: Local DataRobot development setup (SDK, dr-cli, Agent Assist)
+- datarobot-workload-api: Create, configure, debug, observe, and roll out container workloads on DataRobot's Workload API
 
 When asked to use a DataRobot skill, read the corresponding SKILL.md file for detailed guidance.
 ```
