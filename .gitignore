@@ -43,6 +43,7 @@ Thumbs.db
 !tests/e2e/skill_hashes.json
 !package.json
 !.opencode-plugin/themes/*.json
+!.well-known/ai-catalog.json
 
 # Environment variables
 .env

@@ -99,8 +99,9 @@ The easiest way to create a new skill is to start from an existing one close to 
 
 3. The `description` field must begin with "Use when" so the agent knows when to load the skill.
 4. Add or update any supporting scripts, templates, or documents referenced by the skill.
-5. Reinstall or reload the skill bundle in your coding agent so the updated skill is available.
-6. Test the skill with a prompt that exercises the workflow you expect users to follow.
+5. Add an entry for the new skill in `.well-known/ai-catalog.json`. Copy an existing entry and update the `identifier`, `displayName`, `url`, `description`, and `representativeQueries` fields. Write `representativeQueries` as natural-language phrases a user would type to discover the skill — these drive semantic search quality in ARD discovery services.
+6. Reinstall or reload the skill bundle in your coding agent so the updated skill is available.
+7. Test the skill with a prompt that exercises the workflow you expect users to follow.
 
 ## Workflow rules
 
