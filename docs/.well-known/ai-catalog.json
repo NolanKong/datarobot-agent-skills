@@ -6,6 +6,18 @@
   },
   "entries": [
     {
+      "identifier": "urn:air:github.com:datarobot-oss:datarobot-agent-skills:discover",
+      "displayName": "datarobot-discover",
+      "type": "application/ai-skill",
+      "url": "https://github.com/datarobot-oss/datarobot-agent-skills/blob/main/skills/datarobot-discover/SKILL.md",
+      "description": "Discover all available DataRobot resources — skills, MCP servers, and agents — by fetching the live DataRobot catalog directly.",
+      "representativeQueries": [
+        "find DataRobot capabilities for my task",
+        "what DataRobot tools are available",
+        "discover DataRobot skills and MCP servers"
+      ]
+    },
+    {
       "identifier": "urn:air:github.com:datarobot-oss:datarobot-agent-skills:setup",
       "displayName": "datarobot-setup",
       "type": "application/ai-skill",
