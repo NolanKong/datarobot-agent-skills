@@ -12,7 +12,7 @@ description: >-
 
 # DataRobot Agent Assist
 
-This skill merges **agent design, coding, and deployment** with **interactive dress-rehearsal simulation** in one place.
+This skill merges **agent design, coding, and deployment** with an optional **dress-rehearsal simulation** — a try-before-you-build session that lets you chat with your agent design before writing any code.
 
 Assistance falls into three categories:
 
@@ -29,10 +29,10 @@ If the user's first message is simply `1`, `2`, or `3`, treat it as selecting on
 Present the three options clearly:
 
 ```
-Welcome! I help you design, code, and deploy AI agents (with optional dress-rehearsal simulation before coding).
+Welcome! I help you design, code, and deploy AI agents.
 
 What would you like to do?
-  1. Design an AI agent     → Describe your idea
+  1. Design an AI agent     → Describe your idea (optional dress rehearsal before coding)
   2. Code an AI agent       → Load and implement an existing agent_spec.md
   3. Deploy an AI agent     → Deploy an implemented agent to DataRobot
 ```
@@ -111,21 +111,64 @@ Then update the spec accordingly:
 
 ### Agent Simulation (Before Coding)
 
-Before transitioning to coding, ask the user (exact wording):
+Before transitioning to coding, explain dress rehearsal briefly, then ask (exact wording):
 
-> "Would you like to run a dress rehearsal simulation first? (recommended)"
+> **Dress rehearsal** is a try-before-you-build session: you chat with your agent design as if it were already running. The agent uses your spec's model and system prompt; tool calls return **simulated** (fake but realistic) data — no real APIs, no deployment, no code written yet. It's a safe way to test prompts, tools, and conversation flow before implementation.
+>
+> Would you like to run a dress rehearsal simulation first? (recommended)
 
-Wait for their reply. If they say yes, follow **[Dress Rehearsal](#dress-rehearsal)** end to end: initialize with `rehearsal.py --init`, drive turns with `--session`, handle `NOTE:` / `DONE`, and produce the feedback report. Do not substitute improvised role-play or manual mock tool traces. If they decline or skip, proceed directly to coding — do not simulate without explicit confirmation.
+Wait for their reply:
+
+- **If yes** — follow **[Dress Rehearsal](#dress-rehearsal)** end to end. Do not substitute improvised role-play or manual mock tool traces.
+- **If no** (or any decline such as "no", "skip", "not now") — go to **[Post-design next steps](#post-design-next-steps)**. **Do not** jump to coding, framework selection, or template setup.
 
 Script path: `python <skill_scripts_dir>/rehearsal.py ...`
+
+### Post-design next steps
+
+After the user declines the initial rehearsal prompt — or after a dress rehearsal session ends — present this menu (exact wording):
+
+> What would you like to do next?
+> 1. **Run dress rehearsal** — simulate the agent before coding
+> 2. **Code the agent** — start implementation from `agent_spec.md`
+> 3. **Review / edit spec** — refine `agent_spec.md`
+
+Wait for their choice. **Do not** assume a default or proceed without a reply.
+
+| Choice | Action |
+|--------|--------|
+| 1 or "rehearsal" / "simulate" | Follow **[Dress Rehearsal](#dress-rehearsal)** |
+| 2 or "code" / "implement" | Follow **[2. Coding an AI Agent](#2-coding-an-ai-agent)** — framework selection happens only inside the pre-coding checklist, not here |
+| 3 or "review" / "edit spec" | Display `agent_spec.md` as YAML, invite changes, update the file, then show this menu again |
+
+If the user's reply is unclear, re-display the menu and wait. Never skip straight to framework selection after a rehearsal decline.
 
 ---
 
 ## Dress Rehearsal
 
-Simulate an `agent_spec.md` interactively before writing any code. Responses go through the DataRobot LLM Gateway; the rehearsal script handles API calls, state, and output. You orchestrate the loop, handle out-of-character commands, and produce the feedback report at the end.
+### What it is
 
-**Engine location:** `<skill_scripts_dir>/rehearsal.py` (relative to repository root).
+Dress rehearsal simulates your `agent_spec.md` **before any code is written**. Think of it as a preview performance:
+
+| Aspect | Dress rehearsal | After coding |
+|--------|-----------------|--------------|
+| Agent responses | Real LLM via DataRobot Gateway | Real LLM in your app |
+| Tool calls | **Simulated** return values (no real APIs) | Real integrations |
+| Purpose | Validate prompts, tools, and UX early | Production use |
+
+You play the **end user**. The rehearsal script drives the LLM, simulates tool outputs, and formats session output. You orchestrate the loop, handle out-of-character commands, and produce the feedback report at the end.
+
+**Engine location:** `<skill_scripts_dir>/rehearsal.py`
+
+### Visual presentation (required)
+
+Rehearsal must look visually distinct from normal design/coding chat. Display rehearsal output **verbatim from the first line to the last** — do not truncate, summarize, or replace the closing lines. Each turn is wrapped with a symmetric `─ ★ Agent Dress Rehearsal ★ ─` line at the **top and bottom**, followed by continuation hints and `Type DONE to end the rehearsal session.` **Do not** rephrase those hints in your own words.
+
+While a rehearsal session is active:
+
+- **Announce entry** before the first rehearsal output: e.g. *"Starting dress rehearsal session"*
+- **Do not mix** normal design/coding commentary into rehearsal turns — keep rehearsal in its own lane until the feedback report
 
 ### Step 1 — Initialize the session
 
@@ -141,7 +184,7 @@ session=<session_dir>
 output=<output_file>
 ```
 
-Retain `session_dir` for all subsequent calls. Read the `output_file` and display its contents verbatim, then say:
+Retain `session_dir` for all subsequent calls. Read the `output_file` and display its contents **verbatim**, then say:
 
 > You are now the **end user** of this agent. Type messages as a real user would.
 >
@@ -163,9 +206,30 @@ Keep track of any notes and the number of turns as the session progresses — yo
 python <skill_scripts_dir>/rehearsal.py --session {session_dir} "{user_message}"
 ```
 
-The script prints `output=<output_file>`. Read that file and display its contents verbatim. It will contain `[TOOL CALL]`, `[SIMULATED RETURN]`, and `[Agent]:` blocks as appropriate.
+The script prints `output=<output_file>`.
 
-If the script exits non-zero, display the error and ask whether to continue or abort.
+**CRITICAL — display rule for each turn:** Your user-visible reply for that turn must be **only** the full contents of `output_file` (every line, start to finish). Do not append commentary, performance notes, or your own NOTE/DONE instructions.
+
+Before sending, verify the output includes **both** turn decorations (the symmetric `★ Agent Dress Rehearsal ★` line at top **and** bottom). If the bottom decoration is missing from your reply, you truncated the file — re-read `output_file` and display it complete.
+
+**Wrong** (never do this after a turn):
+```
+[Agent]: ...response...
+
+This time the agent called 3 tools in parallel... Type DONE to end the session.
+```
+
+**Correct** — show the entire file, ending with:
+```
+─────────★ Agent Dress Rehearsal ★─────────
+Type your next message to continue.
+Use NOTE: <text> to record a design observation.
+Type DONE to end the rehearsal session.
+```
+
+The file will contain `[TOOL CALL]`, `[SIMULATED RETURN]`, and `[Agent]` sections as appropriate.
+
+If the script exits non-zero, display the error and ask whether to continue or abort. If rehearsal output includes a `[Model]` section, relay it to the user — the script already picked an available model automatically; do not ask the user to choose a model or paste raw API 404 JSON.
 
 ### Step 3 — Feedback report
 
@@ -196,7 +260,7 @@ Suggested changes:
 ════════════════════════════════════════════
 ```
 
-Then offer to implement any changes to `agent_spec.md`.
+Then offer to implement any changes to `agent_spec.md`. After applying changes (or if none are needed), go to **[Post-design next steps](#post-design-next-steps)**.
 
 ---
 
@@ -429,6 +493,8 @@ Claude's built-in tools replace the plugin's custom Python tools:
 - If it is unclear whether the request falls into one of the three categories, ask a clarifying question
 - If the user insists on a task outside these three categories, politely decline
 - If a user asks to code before designing, strongly encourage designing first
+- After the user declines dress rehearsal, always show **[Post-design next steps](#post-design-next-steps)** — never skip to framework selection
+- During **rehearsal turns**: display only the `output_file` contents — never add performance commentary or replace the script's bottom decoration / DONE hint
 - During **coding**: keep responses to 1–3 sentences; no introductions or conclusions
 - During **design**: be conversational and thorough
 
