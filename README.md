@@ -80,13 +80,27 @@ Click on the section that corresponds to your coding agent to see the installati
 
 <details><summary><strong>Claude Code</strong></summary>
 
-Register the repository as a plugin marketplace:
+Install all DataRobot skills from the official Claude plugins marketplace.
+
+From your terminal:
+
+```bash
+claude plugin install datarobot-agent-skills@claude-plugins-official
+```
+
+From within a Claude Code CLI session:
+
+```bash
+/plugin install datarobot-agent-skills@claude-plugins-official
+```
+
+**Alternative:** register the repository as a plugin marketplace from within a Claude Code CLI session:
 
 ```bash
 /plugin marketplace add datarobot-oss/datarobot-agent-skills
 ```
 
-To install a skill, run:
+To install a specific skill, run:
 
 ```bash
 /plugin install <skill-folder>@datarobot-skills
@@ -167,6 +181,8 @@ Available skills (in datarobot-* folders):
 - datarobot-app-framework-cicd: CI/CD pipelines for DataRobot application templates
 - datarobot-external-agent-monitoring: External agent OTel instrumentation for DataRobot monitoring
 - datarobot-agent-assist: Building and deploying agents
+- datarobot-setup: Local DataRobot development setup (SDK, dr-cli, Agent Assist)
+- datarobot-workload-api: Create, configure, debug, observe, and roll out container workloads on DataRobot's Workload API
 
 When asked to use a DataRobot skill, read the corresponding SKILL.md file for detailed guidance.
 ```
