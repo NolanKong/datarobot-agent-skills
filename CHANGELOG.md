@@ -11,6 +11,11 @@ Each entry should be prefixed with the affected skill folder name (for example,
 
 ## [Unreleased]
 
+## [1.3.6] - 2028-07-14
+
+- `datarobot-agent-assist`: Implement pre-coding-checklist, pre-deployment-checklist & workspace-resolution flows.
+
+
 ## [1.3.5] - 2028-07-08
 
 - `datarobot-agent-assist`: Bumped application template version to 11.10.7.
