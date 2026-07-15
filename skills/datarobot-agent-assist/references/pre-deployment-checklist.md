@@ -31,14 +31,6 @@ Run this checklist when the user enters **[3. Deploying an AI Agent](../SKILL.md
 
    Do **not** check for `agent_spec.md` — it is not required for deployment.
 
-4. **Validate dependencies:**
-
-   ```
-   dr dependency check
-   ```
-
-   Run in `<target_dir>`. Follow the [Dependency check session rule](../SKILL.md#dependency-check-session-rule).
-
-   On non-zero exit: return the full output to the user and stop. Do not attempt to resolve automatically.
+4. **Validate dependencies** — read and follow [dependency-validation.md](dependency-validation.md) end to end.
 
 5. **Deploy** — read `<target_dir>/AGENTS.md` and follow deployment instructions **strictly**. Do not deviate without user confirmation.

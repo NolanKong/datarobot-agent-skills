@@ -99,15 +99,7 @@ Run this checklist when the user enters **[2. Coding an AI Agent](../SKILL.md#2-
 
    Invalidate `<dependency_check_passed>` after this step.
 
-10. **Validate dependencies** — run after setup completes:
-
-    ```
-    dr dependency check
-    ```
-
-    Run in `<target_dir>`. Follow the [Dependency check session rule](../SKILL.md#dependency-check-session-rule).
-
-    **CRITICAL**: On non-zero exit, return the full output to the user and stop. Do not attempt to resolve automatically.
+10. **Validate dependencies** — run after setup completes. Read and follow [dependency-validation.md](dependency-validation.md) end to end.
 
 11. **Re-read `<target_dir>/AGENTS.md`** now that the template is ready.
 

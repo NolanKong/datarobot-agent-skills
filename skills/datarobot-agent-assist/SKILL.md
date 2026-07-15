@@ -64,10 +64,10 @@ Track these for the conversation:
 
 ### Dependency check session rule
 
-Before running `dr dependency check`:
+Before running dependency validation:
 
-- If `<dependency_check_passed>` is true and `<target_dir>` equals `<dependency_check_target_dir>`, skip the check.
-- Otherwise, run `dr dependency check` in `<target_dir>`. On zero exit: set `<dependency_check_passed>` = true and `<dependency_check_target_dir>` = `<target_dir>`. On non-zero exit: hard stop — return full output; do not attempt to resolve automatically.
+- If `<dependency_check_passed>` is true and `<target_dir>` equals `<dependency_check_target_dir>`, skip validation.
+- Otherwise, read and follow [references/dependency-validation.md](references/dependency-validation.md) in `<target_dir>`.
 
 Invalidate `<dependency_check_passed>` (set to false) when:
 
@@ -297,7 +297,7 @@ Valid `--framework` values: `langgraph`, `crewai`, `llamaindex`, `nat`, `base`
 - If a tool returns an error, read the error message carefully before responding
 - For template-prep **warnings**: try to resolve yourself
 - For template-prep **errors**: return the message to the user and ask how to proceed
-- For `dr dependency check` failures: hard stop — return full output; do not attempt to resolve automatically (see [Dependency check session rule](#dependency-check-session-rule))
+- For dependency validation failures that cannot be fixed (install or re-check still fails): hard stop — return full output from all commands run (see [Dependency validation](references/dependency-validation.md))
 - On unexpected errors, ask the user if they want to retry
 
 ---
