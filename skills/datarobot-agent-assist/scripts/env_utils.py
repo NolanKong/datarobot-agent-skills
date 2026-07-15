@@ -4,6 +4,7 @@
 
 """Utility functions for working with .env files."""
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -51,33 +52,77 @@ def read_env_variable(env_file: Path, variable_name: str) -> str:
     raise ValueError(f"Variable '{variable_name}' not found in {env_file}")
 
 
-def ensure_env_file(env_file: Path = Path(".env")) -> None:
+def ensure_env_file(env_file: Path) -> None:
     """
     Ensure .env file exists, creating it via 'dr dotenv setup' if needed.
 
-    If .env file doesn't exist, attempts to run 'dr dotenv setup --yes --output .'
-    to create it. Prints warnings to stderr if setup fails but does not raise an error.
+    If .env file doesn't exist, runs 'dr dotenv setup --yes' in the parent
+    directory of env_file. Prints warnings to stderr if setup fails but does not
+    raise an error.
 
     Args:
-        env_file: Path to the .env file (default: .env in current directory)
+        env_file: Path to the .env file (e.g. target_dir / ".env")
     """
-    if not env_file.exists():
+    env_file = env_file.resolve()
+    if env_file.exists():
+        return
+
+    target_dir = env_file.parent
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        print(f"No .env file found. Running 'dr dotenv setup --yes' in {target_dir}...")
+        result = subprocess.run(
+            ["dr", "dotenv", "setup", "--yes", "--output", "."],
+            cwd=target_dir,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(
+            f"Warning: Failed to run 'dr dotenv setup': {e.stderr}", file=sys.stderr
+        )
+        print("Falling back to environment variables...", file=sys.stderr)
+    except FileNotFoundError:
+        print(
+            "Warning: 'dr' command not found. Falling back to environment variables...",
+            file=sys.stderr,
+        )
+
+
+def get_datarobot_credentials(target_dir: Path) -> tuple[str | None, str | None]:
+    """
+    Get DataRobot credentials from target_dir/.env or environment variables.
+
+    Args:
+        target_dir: Project directory containing the .env file
+
+    Returns:
+        Tuple of (endpoint, api_token); either value may be None if unset
+    """
+    env_file = target_dir.resolve() / ".env"
+    ensure_env_file(env_file)
+
+    endpoint = None
+    api_token = None
+
+    if env_file.exists():
         try:
-            print("No .env file found. Running 'dr dotenv setup --yes --output .'...")
-            result = subprocess.run(
-                ["dr", "dotenv", "setup", "--yes", "--output", "."],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            print(result.stdout)
-        except subprocess.CalledProcessError as e:
-            print(
-                f"Warning: Failed to run 'dr dotenv setup': {e.stderr}", file=sys.stderr
-            )
-            print("Falling back to environment variables...", file=sys.stderr)
-        except FileNotFoundError:
-            print(
-                "Warning: 'dr' command not found. Falling back to environment variables...",
-                file=sys.stderr,
-            )
+            endpoint = read_env_variable(env_file, "DATAROBOT_ENDPOINT")
+        except ValueError:
+            pass
+
+        try:
+            api_token = read_env_variable(env_file, "DATAROBOT_API_TOKEN")
+        except ValueError:
+            pass
+
+    if not endpoint:
+        endpoint = os.environ.get("DATAROBOT_ENDPOINT")
+
+    if not api_token:
+        api_token = os.environ.get("DATAROBOT_API_TOKEN")
+
+    return endpoint, api_token

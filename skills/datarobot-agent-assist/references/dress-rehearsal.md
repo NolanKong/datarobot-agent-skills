@@ -26,7 +26,7 @@ While a rehearsal session is active:
 ### Step 1 — Initialize the session
 
 ```bash
-python <skill_scripts_dir>/rehearsal.py --init [--spec agent_spec.md]
+python <skill_scripts_dir>/rehearsal.py --init --spec <target_dir>/agent_spec.md --target-dir <target_dir>
 ```
 
 If `agent_spec.md` does not exist and no path was provided, say so and stop.
@@ -58,6 +58,8 @@ Keep track of any notes and the number of turns as the session progresses — yo
 ```bash
 python <skill_scripts_dir>/rehearsal.py --session {session_dir} "{user_message}"
 ```
+
+`--target-dir` is optional on turns — the session stores it from `--init`. You may pass `--target-dir <target_dir>` again to override.
 
 The script prints `output=<output_file>`.
 

@@ -4,7 +4,7 @@ Run after menu options **1** (Design) or **2** (Code). Sets `<target_dir>` for t
 
 **Default subdirectory name:** `new-datarobot-agent`
 
-**After resolution:** all design/code work uses `<target_dir>` — specs at `<target_dir>/agent_spec.md`, helper scripts with `--target-dir <target_dir>`, and `list_llm_models.py` / `rehearsal.py` run from `<target_dir>`.
+**After resolution:** all design/code work uses `<target_dir>` — specs at `<target_dir>/agent_spec.md`, and helper scripts with `--target-dir <target_dir>` (including `list_llm_models.py` and `rehearsal.py`).
 
 ---
 

@@ -110,10 +110,11 @@ Run in order before proceeding:
 
 ### Model Selection
 
-- To check available models, run the helper script from `<target_dir>`:
+- To check available models, run:
    ```
    python <skill_scripts_dir>/list_llm_models.py \
-     --json
+     --json \
+     --target-dir <target_dir>
    ```
 
   **CRITICAL**: In case the script fails due to any reason, do **not** proceed. Instead, return the error message to the user and ask how they want to proceed.
@@ -153,7 +154,7 @@ Wait for their reply:
 - **If yes** — follow **[Dress Rehearsal](#dress-rehearsal)** end to end. Do not substitute improvised role-play or manual mock tool traces.
 - **If no** (or any decline such as "no", "skip", "not now") — go to **[Post-design next steps](#post-design-next-steps)**. **Do not** jump to coding, framework selection, or template setup.
 
-Script path: `python <skill_scripts_dir>/rehearsal.py ...` (run from `<target_dir>`; use `--spec <target_dir>/agent_spec.md` if needed)
+Script path: `python <skill_scripts_dir>/rehearsal.py ... --target-dir <target_dir>` (use `--spec <target_dir>/agent_spec.md`)
 
 ### Post-design next steps
 
@@ -251,7 +252,8 @@ Lists available LLM models from DataRobot LLM Gateway.
 Fetches and displays active models from the DataRobot LLM Gateway catalog:
 ```bash
 python <scripts_dir>/list_llm_models.py \
-  --json
+  --json \
+  --target-dir <target_dir>
 ```
 
 Requires env vars: `DATAROBOT_API_TOKEN`, `DATAROBOT_ENDPOINT`
