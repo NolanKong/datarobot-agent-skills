@@ -123,7 +123,10 @@ def test_listing_entry_maps_to_spec_fields(
     assert recorded == expected_fields
     assert recorded["model"] == listing_entry["llm_default_model"]
     if listing_entry["source"] == "gateway":
-        assert recorded["model"] not in {listing_entry["id"], listing_entry["api_model"]}
+        assert recorded["model"] not in {
+            listing_entry["id"],
+            listing_entry["api_model"],
+        }
 
 
 # -- the table ------------------------------------------------------------------
@@ -326,7 +329,9 @@ def test_create_env_file_writes_correct_routing_keys(
 @pytest.mark.parametrize(
     ("llm_model", "deployment_id", "llm_base_url"),
     [
-        pytest.param(DEPLOYED_PLACEHOLDER, "", "", id="placeholder_without_deployment_id"),
+        pytest.param(
+            DEPLOYED_PLACEHOLDER, "", "", id="placeholder_without_deployment_id"
+        ),
         pytest.param(DEPLOYED_PLACEHOLDER, "null", "", id="invalid_deployment_id_null"),
         pytest.param(
             DEPLOYED_PLACEHOLDER,
