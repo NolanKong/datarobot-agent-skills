@@ -14,6 +14,8 @@ Version bumps, `[Unreleased]` renames, and releases are automated&mdash;see
 
 ## [Unreleased]
 
+- `datarobot-agent-assist`: Clarified that the "After Coding" next-steps menu must be reproduced verbatim (same wording, order, and numbers) rather than paraphrased or renumbered, after an observed case where the assistant referenced "option 3" for a menu item that was actually numbered differently.
+
 ## [1.11.0] - 2026-09-24
 
 - `repo`: Added Codex plugin metadata and included the Codex manifest in the shared version bump workflow.
