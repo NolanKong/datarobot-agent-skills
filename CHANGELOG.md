@@ -14,6 +14,8 @@ Version bumps, `[Unreleased]` renames, and releases are automated&mdash;see
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-09-30
+
 ### Added
 
 - `datarobot-external-agent-monitoring`: Recommend intelligent trace analysis via Tensile (`tensile>=0.12.0`). Each framework reference file gains an **Intelligent Trace Analysis via Tensile** section showing where `tensile.otel.install(tracer=False)` goes for that framework.
